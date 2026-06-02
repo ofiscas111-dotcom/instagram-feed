@@ -2,32 +2,37 @@ name: Instagram Guncelleme
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 */12 * * *'
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions: # İzinleri koda da ekliyoruz
+    permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4 # Versiyonu yükselttik
+      - uses: actions/checkout@v4
 
       - name: Python Kur
-        uses: actions/setup-python@v5 # Versiyonu yükselttik
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Instaloader Yukle ve Resimleri Cek
+      - name: Instaloader Yukle
+        run: pip install instaloader
+
+      - name: Instagramdan Cek
+        env:
+          USER: ${{ secrets.INSTA_USER }} # Sizin veya bot hesabın adı
+          PASS: ${{ secrets.INSTA_PASS }} # Sizin veya bot hesabın şifresi
         run: |
-          pip install instaloader
-          # Profil adini buraya yazin
-          instaloader --no-videos --no-metadata-json --no-captions --no-compress-json --count 9 dostekkoleji
+          # Giriş SİZİN bilgilerinizle yapılıyor, ama çekilen hesap dostekkoleji
+          instaloader --login "$USER" --password "$PASS" --no-videos --no-metadata-json --no-captions --no-compress-json --count 9 dostekkoleji
           
-      - name: Degisiklikleri Kaydet ve Yukle
+      - name: Degisiklikleri Kaydet
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m "Instagram Akışı Güncellendi" || echo "Degisiklik yok"
+          git commit -m "Müşteri Akışı Güncellendi" || echo "Degisiklik yok"
           git push

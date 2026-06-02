@@ -2,7 +2,7 @@ name: Instagram Guncelleme
 
 on:
   schedule:
-    - cron: '0 */12 * * *'
+    - cron: '0 */12 * * *' # Günde 2 kez
   workflow_dispatch:
 
 jobs:
@@ -18,31 +18,52 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Instaloader ve Session Hazirla
+      - name: Instaloader Yukle
+        run: pip install instaloader
+
+      - name: Resimleri Indir (Garantili Yontem)
         env:
           USER: ${{ secrets.INSTA_USER }}
           SESSIONID: ${{ secrets.INSTA_SESSIONID }}
         run: |
-          pip install instaloader
-          # Oturum dosyasini manuel olusturuyoruz (Sifre gerektirmez)
           python -c "
+          import instaloader
           import os
-          from instaloader import InstaloaderContext
-          ctx = InstaloaderContext()
-          ctx.username = '$USER'
-          ctx._session.cookies.set('sessionid', '$SESSIONID', domain='.instagram.com')
-          ctx.save_session_to_file(os.path.expanduser(f'~/.config/instaloader/session-$USER'))
+
+          # Instaloader ayarlarini yap
+          L = instaloader.Instaloader(
+              download_videos=False, 
+              save_metadata=False, 
+              post_metadata_txt_pattern='',
+              download_comments=False,
+              compress_json=False
+          )
+
+          # Session ID ile giris yap (Tarayicidan aldiginiz bilet)
+          L.context._session.cookies.set('sessionid', os.environ['SESSIONID'], domain='.instagram.com')
+          L.context.username = os.environ['USER']
+
+          try:
+              # Hedef profili belirle
+              profile = instaloader.Profile.from_username(L.context, 'dostekkoleji')
+              
+              # Son 9 gonderiyi indir
+              count = 0
+              for post in profile.get_posts():
+                  if count >= 9: break
+                  # Klasor ismini 'dostekkoleji' yap ve indir
+                  L.download_post(post, target='dostekkoleji')
+                  count += 1
+              print('Resimler basariyla indirildi.')
+          except Exception as e:
+              print(f'Hata olustu: {e}')
+              exit(1)
           "
 
-      - name: Resimleri Cek
-        run: |
-          # Artik giris yapilmis durumda, sadece cekiyoruz
-          instaloader --no-videos --no-metadata-json --no-captions --no-compress-json --count 9 dostekkoleji
-          
-      - name: Degisiklikleri Kaydet
+      - name: Degisiklikleri Kaydet ve Yukle
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m "Instagram Akışı Güncellendi" || echo "No changes"
+          git commit -m "Instagram Akışı Güncellendi" || echo "Degisiklik yok"
           git push

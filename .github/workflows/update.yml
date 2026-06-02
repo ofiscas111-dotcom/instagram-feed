@@ -18,21 +18,31 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Instaloader Yukle
-        run: pip install instaloader
-
-      - name: Instagramdan Cek
+      - name: Instaloader ve Session Hazirla
         env:
-          USER: ${{ secrets.INSTA_USER }} # Sizin veya bot hesabın adı
-          PASS: ${{ secrets.INSTA_PASS }} # Sizin veya bot hesabın şifresi
+          USER: ${{ secrets.INSTA_USER }}
+          SESSIONID: ${{ secrets.INSTA_SESSIONID }}
         run: |
-          # Giriş SİZİN bilgilerinizle yapılıyor, ama çekilen hesap dostekkoleji
-          instaloader --login "$USER" --password "$PASS" --no-videos --no-metadata-json --no-captions --no-compress-json --count 9 dostekkoleji
+          pip install instaloader
+          # Oturum dosyasini manuel olusturuyoruz (Sifre gerektirmez)
+          python -c "
+          import os
+          from instaloader import InstaloaderContext
+          ctx = InstaloaderContext()
+          ctx.username = '$USER'
+          ctx._session.cookies.set('sessionid', '$SESSIONID', domain='.instagram.com')
+          ctx.save_session_to_file(os.path.expanduser(f'~/.config/instaloader/session-$USER'))
+          "
+
+      - name: Resimleri Cek
+        run: |
+          # Artik giris yapilmis durumda, sadece cekiyoruz
+          instaloader --no-videos --no-metadata-json --no-captions --no-compress-json --count 9 dostekkoleji
           
       - name: Degisiklikleri Kaydet
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m "Müşteri Akışı Güncellendi" || echo "Degisiklik yok"
+          git commit -m "Instagram Akışı Güncellendi" || echo "No changes"
           git push

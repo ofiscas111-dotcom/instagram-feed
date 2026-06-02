@@ -22,7 +22,7 @@ jobs:
         run: |
           pip install instaloader
           # Profil adini buraya yazin
-          instaloader --no-videos --no-metadata-json --no-captions --no-compress-json --count 9 HEDEF_PROFIL_ADI
+          instaloader --no-videos --no-metadata-json --no-captions --no-compress-json --count 9 dostekkoleji
           
       - name: Degisiklikleri Kaydet ve Yukle
         run: |

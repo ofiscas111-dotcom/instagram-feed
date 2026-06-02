@@ -1,0 +1,38 @@
+name: Instagram Guncelleme
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Her saat basi otomatik calisir
+  workflow_dispatch: # Manuel calistirma butonu ekler
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Python Kur
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Instaloader Yukle ve Resimleri Cek
+        run: |
+          pip install instaloader
+          # dostekkoleji yerine istediginiz kullaniciyi yazin
+          # --count 9 son 9 postu alir
+          instaloader --no-videos --no-metadata-json --no-captions --no-compress-json --count 9 dostekkoleji
+          
+      - name: Resimleri Duzenle (Opsiyonel)
+        run: |
+          # Klasor ismindeki bosluklari ve ozel karakterleri temizlemek gerekebilir
+          # Bu kisim sadece dosyalarin commit edilmesi icin klasoru hazirlar
+          ls -R
+
+      - name: Degisiklikleri Kaydet ve Yukle
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Instagram Akışı Güncellendi" || exit 0
+          git push
